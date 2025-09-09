@@ -23,19 +23,22 @@ public class ApplicationUseCase {
 
     private static final Integer PENDING_REVIEW_ID = 2;
 
-    public Mono<Application> execute(Application application) {
+    public Mono<Application> execute(Application application, String token) {
         log.info("Start execute application: {}", application);
 
+        // 1. Validar que el usuario exista en el MS de auth
         return authenticationGateway.existsByEmailAndDocument(
                 application.getEmail(),
-                application.getDocument())
+                application.getDocument(),
+                token) // <-- aquí ya pasas el token
                 .flatMap(exists -> {
                     if (!exists) {
-                        return Mono
-                                .error(new ApplicationException("REQ_404", "User does not exist in authentication service"));
+                        return Mono.error(new ApplicationException("REQ_404",
+                                "User does not exist in authentication service"));
                     }
                     return Mono.just(application);
                 })
+                // 2. LoanType y Status
                 .flatMap(app -> loanTypeRepository.findById(app.getLoanType().getId())
                         .switchIfEmpty(Mono.error(new ApplicationException("REQ_404", "Loan type not found")))
                         .zipWith(statusRepository.findById(PENDING_REVIEW_ID)
@@ -52,4 +55,5 @@ public class ApplicationUseCase {
                             return applicationRepository.save(newApplication);
                         }));
     }
+
 }

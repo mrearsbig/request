@@ -31,8 +31,8 @@ adapters:
     port: 5432
     database: "request"
     schema: "public"
-    username: "postgres"
-    password: "rajkes-picmeS-jegpa4"
+    username: "${DB_USERNAME}"
+    password: "${DB_PASSWORD}"
 adapter:
   restconsumer:
     timeout: 5000
@@ -58,3 +58,6 @@ resilience4j:
         slidingWindowSize: 10
         minimumNumberOfCalls: 10
         waitDurationInOpenState: "10s"
+security:
+  jwt:
+    secret-base64: "${JWT_SECRET_BASE64}"

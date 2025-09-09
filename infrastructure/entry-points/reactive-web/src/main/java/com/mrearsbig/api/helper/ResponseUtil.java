@@ -13,4 +13,12 @@ public class ResponseUtil {
                 .data(data)
                 .build();
     }
+
+    public static <T> Response<T> responseError(T data) {
+        return Response.<T>builder()
+                .code("REQ_401")
+                .message("Unauthorized")
+                .data(data)
+                .build();
+    }
 }
