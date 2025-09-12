@@ -6,6 +6,14 @@ import lombok.experimental.UtilityClass;
 
 @UtilityClass
 public class ResponseUtil {
+    public static <T> Response<T> responseList(T data) {
+        return Response.<T>builder()
+                .code("REQ_200")
+                .message("Successfully retrieved applications")
+                .data(data)
+                .build();
+    }
+
     public static <T> Response<T> responseCreated(T data) {
         return Response.<T>builder()
                 .code("REQ_201")

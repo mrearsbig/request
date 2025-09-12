@@ -24,4 +24,9 @@ public class Application {
     private String email;
     private Status status;
     private LoanType loanType;
+
+    // Campos adicionales
+    private String name;
+    private Double baseSalary;
+    private Double monthlyPayment;
 }

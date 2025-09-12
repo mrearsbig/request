@@ -29,7 +29,17 @@ public class SecurityHeadersConfig implements WebFilter {
         headers.set("Cache-Control", "no-store");
         headers.set("Pragma", "no-cache");
         headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-        //return chain.filter(exchange);
+        // return chain.filter(exchange);
+
+        String path = exchange.getRequest().getPath().value();
+
+        // Ruta pública
+        if (path.startsWith("/v3/api-docs")
+                || path.startsWith("/swagger-ui")
+                || path.startsWith("/swagger-resources")
+                || path.startsWith("/webjars")) {
+            return chain.filter(exchange);
+        }
 
         String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
 
@@ -41,7 +51,6 @@ public class SecurityHeadersConfig implements WebFilter {
 
         String token = authHeader.substring(7);
 
-        
         if (!tokenProvider.validateToken(token)) {
             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
             return exchange.getResponse().setComplete();
@@ -52,7 +61,7 @@ public class SecurityHeadersConfig implements WebFilter {
 
         String role = tokenProvider.getUserRoleFromToken(token);
         exchange.getAttributes().put("role", role);
-        
+
         return chain.filter(exchange);
     }
 }

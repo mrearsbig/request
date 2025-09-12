@@ -1,5 +1,8 @@
 package com.mrearsbig.usecase.application;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
 import com.mrearsbig.model.application.Application;
 import com.mrearsbig.model.application.gateways.ApplicationRepository;
 import com.mrearsbig.model.config.ApplicationException;
@@ -7,13 +10,15 @@ import com.mrearsbig.model.loantype.LoanType;
 import com.mrearsbig.model.loantype.gateways.LoanTypeRepository;
 import com.mrearsbig.model.status.Status;
 import com.mrearsbig.model.status.gateways.StatusRepository;
+import com.mrearsbig.model.user.User;
 import com.mrearsbig.model.user.gateways.AuthenticationGateway;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+//import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-@Slf4j
+//@Slf4j
 @RequiredArgsConstructor
 public class ApplicationUseCase {
     private final ApplicationRepository applicationRepository;
@@ -24,7 +29,7 @@ public class ApplicationUseCase {
     private static final Integer PENDING_REVIEW_ID = 2;
 
     public Mono<Application> execute(Application application, String token) {
-        log.info("Start execute application: {}", application);
+        System.out.printf("Start execute application: %s%n", application);
 
         // 1. Validar que el usuario exista en el MS de auth
         return authenticationGateway.existsByEmailAndDocument(
@@ -54,6 +59,52 @@ public class ApplicationUseCase {
 
                             return applicationRepository.save(newApplication);
                         }));
+    }
+
+    // Método privado para calcular la cuota mensual usando el sistema francés
+    private Double calculateFrenchMonthlyPayment(Double amount, Double annualInterestRate, Integer termMonths) {
+        if (amount == null || annualInterestRate == null || termMonths == null || termMonths <= 0) {
+            return null;
+        }
+
+        double monthlyRate = annualInterestRate / 12.0;
+        double payment = (amount * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -termMonths));
+
+        return BigDecimal.valueOf(payment)
+            .setScale(2, RoundingMode.HALF_UP)
+            .doubleValue();
+    }
+
+    public Flux<Application> getApplicationsForManualReview(int page, int size, String token) {
+        System.out.printf("Fetching applications for manual review, page: %d, size: %d%n", page, size);
+
+        return applicationRepository.findAllPendingForReview(page, size)
+            .flatMap(application -> {
+                Mono<LoanType> ltMono = loanTypeRepository.findById(application.getLoanType().getId());
+                Mono<Status> stMono = statusRepository.findById(application.getStatus().getId());
+                Mono<User> userMono = authenticationGateway.findByEmail(application.getEmail(), token);
+
+                return Mono.zip(ltMono, stMono, userMono)
+                        .map(tuple -> {
+                            LoanType loanType = tuple.getT1();
+                            Status status = tuple.getT2();
+                            User user = tuple.getT3();
+
+                            Double monthlyPayment = calculateFrenchMonthlyPayment(
+                                    application.getAmount(),
+                                    loanType.getInterestRate(),
+                                    application.getTerm()
+                            );
+
+                            return application.toBuilder()
+                                    .name(user.getFirstName() + " " + user.getLastName())
+                                    .baseSalary(user.getBaseSalary())
+                                    .loanType(loanType)
+                                    .status(status)
+                                    .monthlyPayment(monthlyPayment)
+                                    .build();
+                        });
+            });
     }
 
 }
