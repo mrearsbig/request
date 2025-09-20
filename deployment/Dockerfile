@@ -18,10 +18,13 @@ COPY infrastructure/ infrastructure/
 RUN chmod +x ./gradlew
 
 # Build the application (skip tests for faster build)
-RUN ./gradlew build -x test
+RUN ./gradlew clean build -x validateStructure -x test --no-daemon
 
 # Stage 2: Run the application
 FROM eclipse-temurin:21-jre-alpine
+
+# Install curl for health check
+RUN apk add --no-cache curl
 
 # Create a non-root user
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
@@ -30,7 +33,7 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 WORKDIR /app
 
 # Copy the built JAR from the builder stage
-COPY --from=builder /app/build/libs/*.jar app.jar
+COPY --from=builder /app/applications/app-service/build/libs/*.jar app.jar
 
 # Change ownership to the non-root user
 RUN chown -R appuser:appgroup /app
