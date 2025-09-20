@@ -37,6 +37,10 @@ adapter:
   restconsumer:
     timeout: 5000
     url: "http://localhost:8080"
+  sqs:
+    region: "us-east-1"
+    queueUrl: "https://sqs.us-east-1.amazonaws.com/437399477404/MyQueue"
+    # endpoint: "http://localhost:4566"
 resilience4j:
   circuitbreaker:
     instances:

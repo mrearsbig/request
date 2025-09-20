@@ -18,21 +18,13 @@ import org.springframework.transaction.reactive.TransactionalOperator;
 
 @Repository
 public class ApplicationReactiveRepositoryAdapter extends
-        ReactiveAdapterOperations<Application/* change for domain model */, ApplicationData/*
-                                                                                            * change for adapter model
-                                                                                            */, UUID, ApplicationReactiveRepository>
+        ReactiveAdapterOperations<Application, ApplicationData, UUID, ApplicationReactiveRepository>
         implements ApplicationRepository {
     private final TransactionalOperator transactionalOperator;
 
     public ApplicationReactiveRepositoryAdapter(ApplicationReactiveRepository repository, ObjectMapper mapper,
             TransactionalOperator transactionalOperator) {
-        /**
-         * Could be use mapper.mapBuilder if your domain model implement builder pattern
-         * super(repository, mapper, d ->
-         * mapper.mapBuilder(d,ObjectModel.ObjectModelBuilder.class).build());
-         * Or using mapper.map with the class of the object model
-         */
-        super(repository, mapper, d -> mapper.map(d, Application.class/* change for domain model */));
+        super(repository, mapper, d -> mapper.map(d, Application.class));
         this.transactionalOperator = transactionalOperator;
     }
 
@@ -64,6 +56,11 @@ public class ApplicationReactiveRepositoryAdapter extends
                 .loanType(entity.getLoanType() != null ? entity.getLoanType().getId() : null) // 👈 aquí
                 .status(entity.getStatus() != null ? entity.getStatus().getId() : null) // 👈 aquí
                 .build();
+    }
+
+    @Override
+    public Mono<Application> findById(UUID id) {
+        return super.findById(id).as(transactionalOperator::transactional);
     }
 
     @Override

@@ -3,8 +3,6 @@ package com.mrearsbig.model.user;
 import java.time.LocalDate;
 import java.util.UUID;
 
-import javax.management.relation.Role;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

@@ -3,9 +3,6 @@ package com.mrearsbig.consumer;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
 
-import java.time.LocalDate;
-import java.util.UUID;
-
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -30,8 +27,8 @@ public class RestConsumer implements AuthenticationGateway {
                         .build())
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + token) // 🔑 propaga el token del usuario
                 .retrieve()
-                .bodyToMono(ObjectResponse.class)
-                .map(response -> Boolean.TRUE.equals(response.getData()));
+                .bodyToMono(BooleanResponse.class)
+                .map(BooleanResponse::getData);
     }
 
     @CircuitBreaker(name = "findByEmail" /* , fallbackMethod = "testGetOk" */)
@@ -43,6 +40,7 @@ public class RestConsumer implements AuthenticationGateway {
                         .build())
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
                 .retrieve()
-                .bodyToMono(User.class);
+                .bodyToMono(UserResponse.class)
+                .map(response -> response.getData());
     }
 }
